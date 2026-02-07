@@ -1,7 +1,7 @@
 {
   "name": "fakkak-api",
   "version": "1.0.0",
-  "dependencies": {
+"dependencies": {
     "youtube-captions-scraper": "^2.0.3"
   }
 }
