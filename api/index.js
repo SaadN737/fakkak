@@ -1,29 +1,44 @@
-const { YoutubeTranscript } = require('youtube-transcript');
+const { getSubtitles } = require('youtube-captions-scraper');
 
 module.exports = async (req, res) => {
+    // إعدادات الـ CORS عشان n8n ميزعلش
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET');
+    
     const { videoId } = req.query;
 
     if (!videoId) {
-        return res.status(400).json({ error: 'يا وحش فين الـ videoId؟' });
+        return res.status(400).json({ error: 'فين الـ videoId يا وحش؟' });
     }
 
     try {
-        // بنحاول نجيب الترجمة وبنقول للمكتبة تدور في العربي الأول وبعدين الإنجليزي
-        const transcript = await YoutubeTranscript.fetchTranscript(videoId, {
-            lang: 'ar' // جرب العربي الأول
-        }).catch(() => {
-            return YoutubeTranscript.fetchTranscript(videoId, { lang: 'en' }); // لو فشل جرب الإنجليزي
+        // بنحاول نسحب الترجمة
+        const subtitles = await getSubtitles({
+            videoID: videoId, // لازم الـ D تكون Capital هنا
+            lang: 'ar'
         });
 
-        const fullText = transcript.map(t => t.text).join(' ');
-        res.status(200).json({ status: 'success', data: fullText });
-    } catch (error) {
-        res.status(500).json({ 
-            status: 'error', 
-            message: 'يوتيوب بيقولك: ' + error.message,
-            tip: 'جرب فيديو تعليمي طويل، الفيديوهات القصيرة ساعات حمايتها أقوى'
+        // تحويل المصفوفة لنص واحد
+        const fullText = subtitles.map(s => s.text).join(' ');
+
+        res.status(200).json({
+            status: 'success',
+            data: fullText
         });
+    } catch (error) {
+        // لو فشل في العربي، بنجرب الإنجليزي كمحاولة أخيرة
+        try {
+            const enSubtitles = await getSubtitles({
+                videoID: videoId,
+                lang: 'en'
+            });
+            const enText = enSubtitles.map(s => s.text).join(' ');
+            res.status(200).json({ status: 'success', data: enText });
+        } catch (enError) {
+            res.status(500).json({ 
+                status: 'error', 
+                message: 'يوتيوب قافل الترجمة تماماً للفيديو ده: ' + enError.message 
+            });
+        }
     }
 };
