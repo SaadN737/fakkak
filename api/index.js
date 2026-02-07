@@ -12,8 +12,8 @@ module.exports = async (req, res) => {
     try {
         const transcript = await YoutubeTranscript.fetchTranscript(videoId);
         const fullText = transcript.map(t => t.text).join(' ');
-        res.status(200).json({ status: 'success', data: fullText });
+        res.status(200).json({ status: 'done', data: fullText });
     } catch (error) {
         res.status(500).json({ status: 'error', message: error.message });
     }
-};
+}; 
